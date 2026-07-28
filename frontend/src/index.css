@@ -1,0 +1,64 @@
+@import "tailwindcss";
+
+@theme {
+  /* Paleta — inspirada em livro-caixa/extrato: tinta escura + latão */
+  --color-fundo-principal: #10161c;
+  --color-fundo-painel: #171f27;
+  --color-fundo-elevado: #1e2833;
+  --color-fundo-elevado-hover: #253140;
+  --color-borda-sutil: rgba(255, 255, 255, 0.08);
+  --color-borda-media: rgba(255, 255, 255, 0.14);
+
+  --color-texto-primario: #edeff2;
+  --color-texto-secundario: #8b96a3;
+  --color-texto-terciario: #5c6773;
+
+  --color-acento-principal: #c9a25d;
+  --color-acento-principal-escuro: #a9843f;
+  --color-acento-principal-suave: rgba(201, 162, 93, 0.14);
+
+  --color-positivo: #4fbf8b;
+  --color-positivo-suave: rgba(79, 191, 139, 0.14);
+  --color-negativo: #e0665a;
+  --color-negativo-suave: rgba(224, 102, 90, 0.14);
+
+  --font-display: "Fraunces", ui-serif, serif;
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+}
+
+html {
+  color-scheme: dark;
+}
+
+body {
+  background-color: var(--color-fundo-principal);
+  color: var(--color-texto-primario);
+  font-family: var(--font-sans);
+}
+
+/* Foco de teclado visível em qualquer elemento interativo */
+:focus-visible {
+  outline: 2px solid var(--color-acento-principal);
+  outline-offset: 2px;
+}
+
+/* Scrollbar discreta para as tabelas com rolagem horizontal */
+.rolagem-discreta::-webkit-scrollbar {
+  height: 8px;
+  width: 8px;
+}
+.rolagem-discreta::-webkit-scrollbar-track {
+  background: transparent;
+}
+.rolagem-discreta::-webkit-scrollbar-thumb {
+  background-color: var(--color-borda-media);
+  border-radius: 999px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
