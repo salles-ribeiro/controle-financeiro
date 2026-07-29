@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { WalletCards } from 'lucide-react';
 import { usarAutenticacao } from '../contextos/ContextoDeAutenticacao';
+import { clienteDeApi } from '../servicos/clienteDeApi';
 import { Botao } from '../componentes/Botao';
 import { CampoDeEntrada } from '../componentes/CamposDeFormulario';
 
@@ -15,6 +16,7 @@ export function PaginaDeCadastro() {
   const [confirmacaoDaSenha, setConfirmacaoDaSenha] = useState('');
   const [diaDeViradaDoCartao, setDiaDeViradaDoCartao] = useState(1);
   const [possuiRegistroDeRendaMensal, setPossuiRegistroDeRendaMensal] = useState(false);
+  const [valorDaRendaMensal, setValorDaRendaMensal] = useState('');
   const [estaEnviando, setEstaEnviando] = useState(false);
   const [mensagemDeErro, setMensagemDeErro] = useState('');
 
@@ -36,6 +38,17 @@ export function PaginaDeCadastro() {
         diaDeViradaDoCartao: Number(diaDeViradaDoCartao),
         possuiRegistroDeRendaMensal,
       });
+
+      if (possuiRegistroDeRendaMensal && valorDaRendaMensal) {
+        await clienteDeApi.criarReceita({
+          descricaoDaReceita: 'Renda mensal',
+          tipoDaReceita: 'FIXA',
+          valorMensalDaReceitaFixa: Number(valorDaRendaMensal),
+          dataDoRecebimentoOuInicio: new Date().toISOString().slice(0, 10),
+          dataDeTerminoDaRecorrenciaFixa: null,
+        });
+      }
+
       navegar('/dashboard');
     } catch (erroAoCadastrar) {
       setMensagemDeErro(erroAoCadastrar.message);
@@ -109,6 +122,19 @@ export function PaginaDeCadastro() {
               Quero registrar minha renda mensal para ver o saldo previsto (receitas − gastos).
             </span>
           </label>
+
+          {possuiRegistroDeRendaMensal && (
+            <CampoDeEntrada
+              rotulo="Valor da renda mensal (R$)"
+              mensagemDeAjuda="Você poderá editar esse valor e adicionar outras receitas depois."
+              type="number"
+              step="0.01"
+              min="0.01"
+              value={valorDaRendaMensal}
+              onChange={(evento) => setValorDaRendaMensal(evento.target.value)}
+              required
+            />
+          )}
 
           {mensagemDeErro && <p className="text-sm text-negativo">{mensagemDeErro}</p>}
 

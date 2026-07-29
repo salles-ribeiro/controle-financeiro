@@ -28,7 +28,7 @@ function LinhaDeGasto({ gasto, listaDeMesesReferencia, aoEditar, aoExcluir }) {
               <p className="text-xs leading-tight text-texto-terciario">{subtitulo}</p>
             </div>
           </div>
-          <div className="flex shrink-0 items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+          <div className="flex shrink-0 items-center gap-1">
             <button
               onClick={() => aoEditar(gasto)}
               className="rounded-md p-1.5 text-texto-terciario hover:bg-fundo-elevado-hover hover:text-texto-primario"
@@ -66,7 +66,7 @@ function LinhaDeReceita({ receita, listaDeMesesReferencia, aoEditar, aoExcluir }
             <p className="leading-tight text-texto-primario">{receita.descricaoDaReceita}</p>
             <p className="text-xs leading-tight text-texto-terciario">{infoDoTipo.descricaoCurta}</p>
           </div>
-          <div className="flex shrink-0 items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+          <div className="flex shrink-0 items-center gap-1">
             <button
               onClick={() => aoEditar(receita)}
               className="rounded-md p-1.5 text-texto-terciario hover:bg-fundo-elevado-hover hover:text-texto-primario"

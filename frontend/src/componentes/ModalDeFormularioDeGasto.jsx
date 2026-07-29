@@ -3,7 +3,10 @@ import { Modal } from './Modal';
 import { Botao } from './Botao';
 import { CampoDeEntrada, CampoDeSelecao } from './CamposDeFormulario';
 import { clienteDeApi } from '../servicos/clienteDeApi';
-import { converterDataParaFormatoDeCampoDeInput } from '../servicos/utilitariosDeFormatacao';
+import {
+  converterDataParaFormatoDeCampoDeInput,
+  formatarValorComoMoedaBrasileira,
+} from '../servicos/utilitariosDeFormatacao';
 
 const HOJE_EM_FORMATO_DE_CAMPO = new Date().toISOString().slice(0, 10);
 
@@ -22,6 +25,11 @@ export function ModalDeFormularioDeGasto({ aoFechar, aoSalvar, listaDeCategorias
   const [valorTotalDoGasto, setValorTotalDoGasto] = useState(gastoParaEditar?.valorTotalDoGasto ?? '');
   const [valorMensalDoGastoFixo, setValorMensalDoGastoFixo] = useState(gastoParaEditar?.valorMensalDoGastoFixo ?? '');
   const [quantidadeDeParcelas, setQuantidadeDeParcelas] = useState(gastoParaEditar?.quantidadeDeParcelas ?? 2);
+  const [valorDaParcela, setValorDaParcela] = useState(
+    gastoParaEditar?.tipoDoGasto === 'PARCELADO' && gastoParaEditar?.quantidadeDeParcelas
+      ? String(gastoParaEditar.valorTotalDoGasto / gastoParaEditar.quantidadeDeParcelas)
+      : ''
+  );
   const [dataDaCompraOuContratacao, setDataDaCompraOuContratacao] = useState(
     converterDataParaFormatoDeCampoDeInput(gastoParaEditar?.dataDaCompraOuContratacao) || HOJE_EM_FORMATO_DE_CAMPO
   );
@@ -41,7 +49,12 @@ export function ModalDeFormularioDeGasto({ aoFechar, aoSalvar, listaDeCategorias
       categoriaId: categoriaId || null,
       tipoDoGasto,
       dataDaCompraOuContratacao,
-      valorTotalDoGasto: tipoDoGasto !== 'FIXO' ? Number(valorTotalDoGasto) : null,
+      valorTotalDoGasto:
+        tipoDoGasto === 'A_VISTA'
+          ? Number(valorTotalDoGasto)
+          : tipoDoGasto === 'PARCELADO'
+          ? Number(valorDaParcela) * Number(quantidadeDeParcelas)
+          : null,
       valorMensalDoGastoFixo: tipoDoGasto === 'FIXO' ? Number(valorMensalDoGastoFixo) : null,
       quantidadeDeParcelas: tipoDoGasto === 'PARCELADO' ? Number(quantidadeDeParcelas) : null,
       dataDeTerminoDaRecorrenciaFixa: tipoDoGasto === 'FIXO' ? dataDeTerminoDaRecorrenciaFixa || null : null,
@@ -131,12 +144,12 @@ export function ModalDeFormularioDeGasto({ aoFechar, aoSalvar, listaDeCategorias
           <>
             <div className="grid grid-cols-2 gap-3">
               <CampoDeEntrada
-                rotulo="Valor total (R$)"
+                rotulo="Valor da parcela (R$)"
                 type="number"
                 step="0.01"
                 min="0.01"
-                value={valorTotalDoGasto}
-                onChange={(evento) => setValorTotalDoGasto(evento.target.value)}
+                value={valorDaParcela}
+                onChange={(evento) => setValorDaParcela(evento.target.value)}
                 required
               />
               <CampoDeEntrada
@@ -149,6 +162,11 @@ export function ModalDeFormularioDeGasto({ aoFechar, aoSalvar, listaDeCategorias
                 required
               />
             </div>
+            {Number(valorDaParcela) > 0 && Number(quantidadeDeParcelas) > 0 && (
+              <p className="text-sm text-texto-secundario">
+                Total: {formatarValorComoMoedaBrasileira(Number(valorDaParcela) * Number(quantidadeDeParcelas))}
+              </p>
+            )}
             <CampoDeEntrada
               rotulo="Data da compra"
               mensagemDeAjuda="A 1ª parcela cai na fatura seguinte se a compra for depois do dia de virada."

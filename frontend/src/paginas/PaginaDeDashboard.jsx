@@ -29,7 +29,7 @@ function CartaoDeResumo({ icone: Icone, rotulo, valor, corDoIcone }) {
 export function PaginaDeDashboard() {
   const { usuarioAutenticado } = usarAutenticacao();
 
-  const [quantidadeDeMesesAFrente, setQuantidadeDeMesesAFrente] = useState(6);
+  const [quantidadeDeMesesAFrente, setQuantidadeDeMesesAFrente] = useState(3);
   const [projecao, setProjecao] = useState(null);
   const [listaDeCategorias, setListaDeCategorias] = useState([]);
   const [estaCarregando, setEstaCarregando] = useState(true);

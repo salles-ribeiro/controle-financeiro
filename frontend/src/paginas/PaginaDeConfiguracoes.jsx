@@ -15,6 +15,8 @@ export function PaginaDeConfiguracoes() {
   const [possuiRegistroDeRendaMensal, setPossuiRegistroDeRendaMensal] = useState(
     usuarioAutenticado.possuiRegistroDeRendaMensal
   );
+  const [valorDaRendaMensal, setValorDaRendaMensal] = useState('');
+  const [receitaPrincipal, setReceitaPrincipal] = useState(null);
   const [estaSalvandoPerfil, setEstaSalvandoPerfil] = useState(false);
   const [mensagemDePerfilSalvo, setMensagemDePerfilSalvo] = useState('');
   const [mensagemDeErroDoPerfil, setMensagemDeErroDoPerfil] = useState('');
@@ -27,6 +29,17 @@ export function PaginaDeConfiguracoes() {
     clienteDeApi.listarCategorias().then(({ categorias }) => setListaDeCategorias(categorias));
   }, []);
 
+  useEffect(() => {
+    if (!usuarioAutenticado.possuiRegistroDeRendaMensal) return;
+    clienteDeApi.listarReceitas().then(({ receitas }) => {
+      const receitaEncontrada = receitas.find((receita) => receita.tipoDaReceita === 'FIXA');
+      if (receitaEncontrada) {
+        setReceitaPrincipal(receitaEncontrada);
+        setValorDaRendaMensal(String(receitaEncontrada.valorMensalDaReceitaFixa));
+      }
+    });
+  }, [usuarioAutenticado.possuiRegistroDeRendaMensal]);
+
   async function tratarEnvioDoPerfil(evento) {
     evento.preventDefault();
     setMensagemDeErroDoPerfil('');
@@ -37,6 +50,31 @@ export function PaginaDeConfiguracoes() {
         diaDeViradaDoCartao: Number(diaDeViradaDoCartao),
         possuiRegistroDeRendaMensal,
       });
+
+      if (possuiRegistroDeRendaMensal && valorDaRendaMensal) {
+        if (receitaPrincipal) {
+          const { receita } = await clienteDeApi.atualizarReceita(receitaPrincipal.id, {
+            descricaoDaReceita: receitaPrincipal.descricaoDaReceita,
+            tipoDaReceita: 'FIXA',
+            valorMensalDaReceitaFixa: Number(valorDaRendaMensal),
+            dataDoRecebimentoOuInicio: receitaPrincipal.dataDoRecebimentoOuInicio.slice(0, 10),
+            dataDeTerminoDaRecorrenciaFixa: receitaPrincipal.dataDeTerminoDaRecorrenciaFixa
+              ? receitaPrincipal.dataDeTerminoDaRecorrenciaFixa.slice(0, 10)
+              : null,
+          });
+          setReceitaPrincipal(receita);
+        } else {
+          const { receita } = await clienteDeApi.criarReceita({
+            descricaoDaReceita: 'Renda mensal',
+            tipoDaReceita: 'FIXA',
+            valorMensalDaReceitaFixa: Number(valorDaRendaMensal),
+            dataDoRecebimentoOuInicio: new Date().toISOString().slice(0, 10),
+            dataDeTerminoDaRecorrenciaFixa: null,
+          });
+          setReceitaPrincipal(receita);
+        }
+      }
+
       atualizarUsuarioNoContexto(usuario);
       setMensagemDePerfilSalvo('Preferências salvas com sucesso.');
     } catch (erroAoSalvarPerfil) {
@@ -105,6 +143,19 @@ export function PaginaDeConfiguracoes() {
               Quero registrar minha renda mensal para ver o saldo previsto (receitas − gastos).
             </span>
           </label>
+
+          {possuiRegistroDeRendaMensal && (
+            <CampoDeEntrada
+              rotulo="Valor da renda mensal (R$)"
+              mensagemDeAjuda="Outras receitas (fixas ou variáveis) podem ser adicionadas no Dashboard."
+              type="number"
+              step="0.01"
+              min="0.01"
+              value={valorDaRendaMensal}
+              onChange={(evento) => setValorDaRendaMensal(evento.target.value)}
+              required
+            />
+          )}
 
           {mensagemDeErroDoPerfil && <p className="text-sm text-negativo">{mensagemDeErroDoPerfil}</p>}
           {mensagemDePerfilSalvo && <p className="text-sm text-positivo">{mensagemDePerfilSalvo}</p>}
