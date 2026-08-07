@@ -65,10 +65,13 @@ function formatarNomeDoMesReferenciaParaExibicao(mesReferencia) {
   return `${nomeDoMes}/${anoEmTexto}`;
 }
 
-function gerarListaDeMesesReferenciaAPartirDeHoje(quantidadeDeMesesAFrente, diaDeViradaDoCartao) {
+// "quantidadeDeMesesParaTras" permite estender a lista para meses ANTES de
+// hoje (histórico). Por exemplo, com quantidadeDeMesesParaTras=3 e
+// quantidadeDeMesesAFrente=0, a lista contém os 3 meses anteriores ao atual.
+function gerarListaDeMesesReferenciaAPartirDeHoje(quantidadeDeMesesAFrente, diaDeViradaDoCartao, quantidadeDeMesesParaTras = 0) {
   const mesReferenciaDeHoje = calcularMesDeReferenciaDaFatura(new Date().toISOString(), diaDeViradaDoCartao);
   const listaDeMesesReferencia = [];
-  for (let indiceDoMes = 0; indiceDoMes < quantidadeDeMesesAFrente; indiceDoMes += 1) {
+  for (let indiceDoMes = -quantidadeDeMesesParaTras; indiceDoMes < quantidadeDeMesesAFrente; indiceDoMes += 1) {
     listaDeMesesReferencia.push(adicionarMesesAoMesReferencia(mesReferenciaDeHoje, indiceDoMes));
   }
   return listaDeMesesReferencia;

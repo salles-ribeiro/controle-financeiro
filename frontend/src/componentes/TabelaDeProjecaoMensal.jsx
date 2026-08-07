@@ -107,6 +107,7 @@ function LinhaDeSecao({ titulo, quantidadeDeColunas }) {
 }
 
 export function TabelaDeProjecaoMensal({
+  titulo = 'Próximos meses',
   listaDeMesesReferencia,
   resumoMensal,
   detalhamentoPorGasto,
@@ -125,7 +126,7 @@ export function TabelaDeProjecaoMensal({
         <thead>
           <tr>
             <th className="sticky left-0 z-10 min-w-[220px] bg-fundo-painel px-4 pb-3 text-left align-bottom font-display text-base font-normal text-texto-primario">
-              Próximos meses
+              {titulo}
             </th>
             {resumoMensal.map((mes) => (
               <th

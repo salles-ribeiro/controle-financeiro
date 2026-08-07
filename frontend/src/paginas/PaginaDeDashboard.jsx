@@ -6,6 +6,7 @@ import { Cartao } from '../componentes/Cartao';
 import { Botao } from '../componentes/Botao';
 import { FaixaDoCicloDaFatura } from '../componentes/FaixaDoCicloDaFatura';
 import { TabelaDeProjecaoMensal } from '../componentes/TabelaDeProjecaoMensal';
+import { PainelDeHistoricoMensal } from '../componentes/PainelDeHistoricoMensal';
 import { ModalDeFormularioDeGasto } from '../componentes/ModalDeFormularioDeGasto';
 import { ModalDeFormularioDeReceita } from '../componentes/ModalDeFormularioDeReceita';
 import { formatarValorComoMoedaBrasileira } from '../servicos/utilitariosDeFormatacao';
@@ -40,6 +41,12 @@ export function PaginaDeDashboard() {
   const [modalDeReceitaAberto, setModalDeReceitaAberto] = useState(false);
   const [receitaEmEdicao, setReceitaEmEdicao] = useState(null);
 
+  const [painelDeHistoricoAberto, setPainelDeHistoricoAberto] = useState(false);
+  const [quantidadeDeMesesDeHistorico, setQuantidadeDeMesesDeHistorico] = useState(6);
+  const [historico, setHistorico] = useState(null);
+  const [estaCarregandoHistorico, setEstaCarregandoHistorico] = useState(false);
+  const [mensagemDeErroDoHistorico, setMensagemDeErroDoHistorico] = useState('');
+
   const carregarDadosDoDashboard = useCallback(async () => {
     setMensagemDeErro('');
     try {
@@ -56,15 +63,42 @@ export function PaginaDeDashboard() {
     }
   }, [quantidadeDeMesesAFrente]);
 
+  const carregarHistorico = useCallback(async (quantidade) => {
+    setEstaCarregandoHistorico(true);
+    setMensagemDeErroDoHistorico('');
+    try {
+      const historicoRecebido = await clienteDeApi.obterProjecao(0, quantidade);
+      setHistorico(historicoRecebido);
+    } catch (erroAoCarregar) {
+      setMensagemDeErroDoHistorico(erroAoCarregar.message);
+    } finally {
+      setEstaCarregandoHistorico(false);
+    }
+  }, []);
+
   useEffect(() => {
     carregarDadosDoDashboard();
   }, [carregarDadosDoDashboard]);
+
+  function alternarPainelDeHistorico() {
+    const proximoEstado = !painelDeHistoricoAberto;
+    setPainelDeHistoricoAberto(proximoEstado);
+    if (proximoEstado && !historico) {
+      carregarHistorico(quantidadeDeMesesDeHistorico);
+    }
+  }
+
+  function trocarQuantidadeDeMesesDeHistorico(quantidade) {
+    setQuantidadeDeMesesDeHistorico(quantidade);
+    carregarHistorico(quantidade);
+  }
 
   async function tratarExclusaoDeGasto(id) {
     if (!window.confirm('Tem certeza que deseja excluir este gasto?')) return;
     try {
       await clienteDeApi.excluirGasto(id);
       carregarDadosDoDashboard();
+      if (painelDeHistoricoAberto) carregarHistorico(quantidadeDeMesesDeHistorico);
     } catch (erroAoExcluir) {
       setMensagemDeErro(erroAoExcluir.message);
     }
@@ -75,9 +109,15 @@ export function PaginaDeDashboard() {
     try {
       await clienteDeApi.excluirReceita(id);
       carregarDadosDoDashboard();
+      if (painelDeHistoricoAberto) carregarHistorico(quantidadeDeMesesDeHistorico);
     } catch (erroAoExcluir) {
       setMensagemDeErro(erroAoExcluir.message);
     }
+  }
+
+  function tratarSalvamentoDoFormulario() {
+    carregarDadosDoDashboard();
+    if (painelDeHistoricoAberto) carregarHistorico(quantidadeDeMesesDeHistorico);
   }
 
   if (estaCarregando) {
@@ -183,10 +223,31 @@ export function PaginaDeDashboard() {
         )}
       </Cartao>
 
+      <PainelDeHistoricoMensal
+        aberto={painelDeHistoricoAberto}
+        aoAlternar={alternarPainelDeHistorico}
+        quantidadeDeMesesParaTras={quantidadeDeMesesDeHistorico}
+        aoTrocarQuantidade={trocarQuantidadeDeMesesDeHistorico}
+        historico={historico}
+        estaCarregando={estaCarregandoHistorico}
+        mensagemDeErro={mensagemDeErroDoHistorico}
+        possuiRegistroDeRendaMensal={usuarioAutenticado.possuiRegistroDeRendaMensal}
+        aoEditarGasto={(gasto) => {
+          setGastoEmEdicao(gasto);
+          setModalDeGastoAberto(true);
+        }}
+        aoExcluirGasto={tratarExclusaoDeGasto}
+        aoEditarReceita={(receita) => {
+          setReceitaEmEdicao(receita);
+          setModalDeReceitaAberto(true);
+        }}
+        aoExcluirReceita={tratarExclusaoDeReceita}
+      />
+
       {modalDeGastoAberto && (
         <ModalDeFormularioDeGasto
           aoFechar={() => setModalDeGastoAberto(false)}
-          aoSalvar={carregarDadosDoDashboard}
+          aoSalvar={tratarSalvamentoDoFormulario}
           listaDeCategorias={listaDeCategorias}
           gastoParaEditar={gastoEmEdicao}
         />
@@ -195,7 +256,7 @@ export function PaginaDeDashboard() {
       {modalDeReceitaAberto && (
         <ModalDeFormularioDeReceita
           aoFechar={() => setModalDeReceitaAberto(false)}
-          aoSalvar={carregarDadosDoDashboard}
+          aoSalvar={tratarSalvamentoDoFormulario}
           receitaParaEditar={receitaEmEdicao}
         />
       )}

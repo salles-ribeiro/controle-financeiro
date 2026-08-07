@@ -93,35 +93,52 @@ function calcularContribuicaoDaReceitaNoMesReferencia(receita, mesReferenciaAval
   return 0;
 }
 
+// Uma linha só faz sentido aparecer se ela contribuir em pelo menos um dos
+// meses exibidos; caso contrário (ex.: parcelamento cujas parcelas já
+// terminaram antes do período consultado) ela não deveria mais ocupar
+// espaço na tela.
+function possuiAlgumValorNaoNuloNosMesesExibidos(valoresPorMesReferencia) {
+  return Object.values(valoresPorMesReferencia).some((valor) => valor !== 0);
+}
+
 function gerarProjecaoFinanceiraCompleta({
   diaDeViradaDoCartao,
   possuiRegistroDeRendaMensal,
   listaDeGastosAtivos,
   listaDeReceitasAtivas,
   quantidadeDeMesesAFrente,
+  quantidadeDeMesesParaTras = 0,
 }) {
-  const listaDeMesesReferencia = gerarListaDeMesesReferenciaAPartirDeHoje(quantidadeDeMesesAFrente, diaDeViradaDoCartao);
+  const listaDeMesesReferencia = gerarListaDeMesesReferenciaAPartirDeHoje(
+    quantidadeDeMesesAFrente,
+    diaDeViradaDoCartao,
+    quantidadeDeMesesParaTras
+  );
 
-  const detalhamentoPorGasto = listaDeGastosAtivos.map((gasto) => {
-    const valoresPorMesReferencia = {};
-    listaDeMesesReferencia.forEach((mesReferencia) => {
-      valoresPorMesReferencia[mesReferencia] = arredondarParaDuasCasasDecimais(
-        calcularContribuicaoDoGastoNoMesReferencia(gasto, mesReferencia, diaDeViradaDoCartao)
-      );
-    });
-    return { ...gasto, valoresPorMesReferencia };
-  });
+  const detalhamentoPorGasto = listaDeGastosAtivos
+    .map((gasto) => {
+      const valoresPorMesReferencia = {};
+      listaDeMesesReferencia.forEach((mesReferencia) => {
+        valoresPorMesReferencia[mesReferencia] = arredondarParaDuasCasasDecimais(
+          calcularContribuicaoDoGastoNoMesReferencia(gasto, mesReferencia, diaDeViradaDoCartao)
+        );
+      });
+      return { ...gasto, valoresPorMesReferencia };
+    })
+    .filter((gasto) => possuiAlgumValorNaoNuloNosMesesExibidos(gasto.valoresPorMesReferencia));
 
   const detalhamentoPorReceita = possuiRegistroDeRendaMensal
-    ? listaDeReceitasAtivas.map((receita) => {
-        const valoresPorMesReferencia = {};
-        listaDeMesesReferencia.forEach((mesReferencia) => {
-          valoresPorMesReferencia[mesReferencia] = arredondarParaDuasCasasDecimais(
-            calcularContribuicaoDaReceitaNoMesReferencia(receita, mesReferencia, diaDeViradaDoCartao)
-          );
-        });
-        return { ...receita, valoresPorMesReferencia };
-      })
+    ? listaDeReceitasAtivas
+        .map((receita) => {
+          const valoresPorMesReferencia = {};
+          listaDeMesesReferencia.forEach((mesReferencia) => {
+            valoresPorMesReferencia[mesReferencia] = arredondarParaDuasCasasDecimais(
+              calcularContribuicaoDaReceitaNoMesReferencia(receita, mesReferencia, diaDeViradaDoCartao)
+            );
+          });
+          return { ...receita, valoresPorMesReferencia };
+        })
+        .filter((receita) => possuiAlgumValorNaoNuloNosMesesExibidos(receita.valoresPorMesReferencia))
     : [];
 
   const resumoMensal = listaDeMesesReferencia.map((mesReferencia) => {

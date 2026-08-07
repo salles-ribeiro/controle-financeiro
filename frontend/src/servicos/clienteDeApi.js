@@ -131,8 +131,10 @@ function excluirReceita(id) {
 }
 
 // --- Projeção financeira ---
-function obterProjecao(quantidadeDeMesesAFrente) {
-  return realizarRequisicao(`/projecao?quantidadeDeMesesAFrente=${quantidadeDeMesesAFrente}`);
+function obterProjecao(quantidadeDeMesesAFrente, quantidadeDeMesesParaTras = 0) {
+  return realizarRequisicao(
+    `/projecao?quantidadeDeMesesAFrente=${quantidadeDeMesesAFrente}&quantidadeDeMesesParaTras=${quantidadeDeMesesParaTras}`
+  );
 }
 
 export const clienteDeApi = {
