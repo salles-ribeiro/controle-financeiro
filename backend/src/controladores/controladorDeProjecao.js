@@ -5,13 +5,22 @@ const { gerarProjecaoFinanceiraCompleta } = require('../servicos/servicoDeProjec
 
 const QUANTIDADE_PADRAO_DE_MESES_A_FRENTE = 12;
 const QUANTIDADE_MAXIMA_DE_MESES_A_FRENTE = 36;
-const QUANTIDADE_MAXIMA_DE_MESES_PARA_TRAS = 36;
+const EXPRESSAO_REGULAR_DE_MES_REFERENCIA = /^\d{4}-(0[1-9]|1[0-2])$/;
 
 async function obterProjecaoFinanceiraMensal(requisicao, resposta) {
   const usuario = await repositorioDeUsuarios.buscarUsuarioPorId(requisicao.usuarioAutenticadoId);
   if (!usuario) {
     return resposta.status(404).json({ mensagemDeErro: 'Usuário não encontrado.' });
   }
+
+  // Quando "mesReferencia" (formato AAAA-MM) é informado, a resposta traz
+  // somente aquele mês específico — usado pelo painel de histórico, onde o
+  // usuário escolhe um único mês passado em vez de um intervalo.
+  const mesReferenciaSolicitado = requisicao.query.mesReferencia;
+  const mesReferenciaEspecifico =
+    typeof mesReferenciaSolicitado === 'string' && EXPRESSAO_REGULAR_DE_MES_REFERENCIA.test(mesReferenciaSolicitado)
+      ? mesReferenciaSolicitado
+      : null;
 
   const quantidadeDeMesesAFrenteSolicitada = Number(requisicao.query.quantidadeDeMesesAFrente);
   const quantidadeDeMesesAFrente =
@@ -20,14 +29,6 @@ async function obterProjecaoFinanceiraMensal(requisicao, resposta) {
     quantidadeDeMesesAFrenteSolicitada <= QUANTIDADE_MAXIMA_DE_MESES_A_FRENTE
       ? quantidadeDeMesesAFrenteSolicitada
       : QUANTIDADE_PADRAO_DE_MESES_A_FRENTE;
-
-  const quantidadeDeMesesParaTrasSolicitada = Number(requisicao.query.quantidadeDeMesesParaTras);
-  const quantidadeDeMesesParaTras =
-    Number.isInteger(quantidadeDeMesesParaTrasSolicitada) &&
-    quantidadeDeMesesParaTrasSolicitada >= 0 &&
-    quantidadeDeMesesParaTrasSolicitada <= QUANTIDADE_MAXIMA_DE_MESES_PARA_TRAS
-      ? quantidadeDeMesesParaTrasSolicitada
-      : 0;
 
   const listaDeGastosAtivos = await repositorioDeGastos.listarGastosAtivosDoUsuario(usuario.id);
   const listaDeReceitasAtivas = usuario.possuiRegistroDeRendaMensal
@@ -40,7 +41,7 @@ async function obterProjecaoFinanceiraMensal(requisicao, resposta) {
     listaDeGastosAtivos,
     listaDeReceitasAtivas,
     quantidadeDeMesesAFrente,
-    quantidadeDeMesesParaTras,
+    mesReferenciaEspecifico,
   });
 
   return resposta.status(200).json(projecaoFinanceiraCompleta);

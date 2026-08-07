@@ -9,7 +9,7 @@ import { TabelaDeProjecaoMensal } from '../componentes/TabelaDeProjecaoMensal';
 import { PainelDeHistoricoMensal } from '../componentes/PainelDeHistoricoMensal';
 import { ModalDeFormularioDeGasto } from '../componentes/ModalDeFormularioDeGasto';
 import { ModalDeFormularioDeReceita } from '../componentes/ModalDeFormularioDeReceita';
-import { formatarValorComoMoedaBrasileira } from '../servicos/utilitariosDeFormatacao';
+import { formatarValorComoMoedaBrasileira, adicionarMesesAoMesReferencia } from '../servicos/utilitariosDeFormatacao';
 
 const OPCOES_DE_QUANTIDADE_DE_MESES = [3, 6, 12];
 
@@ -42,7 +42,7 @@ export function PaginaDeDashboard() {
   const [receitaEmEdicao, setReceitaEmEdicao] = useState(null);
 
   const [painelDeHistoricoAberto, setPainelDeHistoricoAberto] = useState(false);
-  const [quantidadeDeMesesDeHistorico, setQuantidadeDeMesesDeHistorico] = useState(6);
+  const [mesSelecionadoNoHistorico, setMesSelecionadoNoHistorico] = useState(null);
   const [historico, setHistorico] = useState(null);
   const [estaCarregandoHistorico, setEstaCarregandoHistorico] = useState(false);
   const [mensagemDeErroDoHistorico, setMensagemDeErroDoHistorico] = useState('');
@@ -63,11 +63,11 @@ export function PaginaDeDashboard() {
     }
   }, [quantidadeDeMesesAFrente]);
 
-  const carregarHistorico = useCallback(async (quantidade) => {
+  const carregarHistorico = useCallback(async (mesReferencia) => {
     setEstaCarregandoHistorico(true);
     setMensagemDeErroDoHistorico('');
     try {
-      const historicoRecebido = await clienteDeApi.obterProjecao(0, quantidade);
+      const historicoRecebido = await clienteDeApi.obterProjecaoDeUmMesEspecifico(mesReferencia);
       setHistorico(historicoRecebido);
     } catch (erroAoCarregar) {
       setMensagemDeErroDoHistorico(erroAoCarregar.message);
@@ -83,14 +83,16 @@ export function PaginaDeDashboard() {
   function alternarPainelDeHistorico() {
     const proximoEstado = !painelDeHistoricoAberto;
     setPainelDeHistoricoAberto(proximoEstado);
-    if (proximoEstado && !historico) {
-      carregarHistorico(quantidadeDeMesesDeHistorico);
+    if (proximoEstado && !mesSelecionadoNoHistorico) {
+      const mesAnterior = adicionarMesesAoMesReferencia(projecao.listaDeMesesReferencia[0], -1);
+      setMesSelecionadoNoHistorico(mesAnterior);
+      carregarHistorico(mesAnterior);
     }
   }
 
-  function trocarQuantidadeDeMesesDeHistorico(quantidade) {
-    setQuantidadeDeMesesDeHistorico(quantidade);
-    carregarHistorico(quantidade);
+  function trocarMesDoHistorico(mesReferencia) {
+    setMesSelecionadoNoHistorico(mesReferencia);
+    carregarHistorico(mesReferencia);
   }
 
   async function tratarExclusaoDeGasto(id) {
@@ -98,7 +100,7 @@ export function PaginaDeDashboard() {
     try {
       await clienteDeApi.excluirGasto(id);
       carregarDadosDoDashboard();
-      if (painelDeHistoricoAberto) carregarHistorico(quantidadeDeMesesDeHistorico);
+      if (painelDeHistoricoAberto) carregarHistorico(mesSelecionadoNoHistorico);
     } catch (erroAoExcluir) {
       setMensagemDeErro(erroAoExcluir.message);
     }
@@ -109,7 +111,7 @@ export function PaginaDeDashboard() {
     try {
       await clienteDeApi.excluirReceita(id);
       carregarDadosDoDashboard();
-      if (painelDeHistoricoAberto) carregarHistorico(quantidadeDeMesesDeHistorico);
+      if (painelDeHistoricoAberto) carregarHistorico(mesSelecionadoNoHistorico);
     } catch (erroAoExcluir) {
       setMensagemDeErro(erroAoExcluir.message);
     }
@@ -117,7 +119,7 @@ export function PaginaDeDashboard() {
 
   function tratarSalvamentoDoFormulario() {
     carregarDadosDoDashboard();
-    if (painelDeHistoricoAberto) carregarHistorico(quantidadeDeMesesDeHistorico);
+    if (painelDeHistoricoAberto) carregarHistorico(mesSelecionadoNoHistorico);
   }
 
   if (estaCarregando) {
@@ -130,7 +132,7 @@ export function PaginaDeDashboard() {
 
   return (
     <main className="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-6 sm:px-6">
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Cartao className="p-4 sm:col-span-2 lg:col-span-1">
           <FaixaDoCicloDaFatura diaDeViradaDoCartao={usuarioAutenticado.diaDeViradaDoCartao} />
         </Cartao>
@@ -143,15 +145,21 @@ export function PaginaDeDashboard() {
               valor={resumoDoMesAtual.totalDeGastosNoMes}
               corDoIcone="text-negativo"
             />
-            {usuarioAutenticado.possuiRegistroDeRendaMensal ? (
-              <CartaoDeResumo
-                icone={Scale}
-                rotulo={`Saldo previsto em ${resumoDoMesAtual.nomeDoMesFormatadoParaExibicao}`}
-                valor={resumoDoMesAtual.saldoPrevistoNoMes}
-                corDoIcone={resumoDoMesAtual.saldoPrevistoNoMes < 0 ? 'text-negativo' : 'text-positivo'}
-              />
-            ) : (
-              <CartaoDeResumo icone={TrendingUp} rotulo="Receitas" valor={0} corDoIcone="text-texto-terciario" />
+            {usuarioAutenticado.possuiRegistroDeRendaMensal && (
+              <>
+                <CartaoDeResumo
+                  icone={TrendingUp}
+                  rotulo={`Receitas em ${resumoDoMesAtual.nomeDoMesFormatadoParaExibicao}`}
+                  valor={resumoDoMesAtual.totalDeReceitasNoMes}
+                  corDoIcone="text-positivo"
+                />
+                <CartaoDeResumo
+                  icone={Scale}
+                  rotulo={`Saldo previsto em ${resumoDoMesAtual.nomeDoMesFormatadoParaExibicao}`}
+                  valor={resumoDoMesAtual.saldoPrevistoNoMes}
+                  corDoIcone={resumoDoMesAtual.saldoPrevistoNoMes < 0 ? 'text-negativo' : 'text-positivo'}
+                />
+              </>
             )}
           </>
         )}
@@ -223,26 +231,29 @@ export function PaginaDeDashboard() {
         )}
       </Cartao>
 
-      <PainelDeHistoricoMensal
-        aberto={painelDeHistoricoAberto}
-        aoAlternar={alternarPainelDeHistorico}
-        quantidadeDeMesesParaTras={quantidadeDeMesesDeHistorico}
-        aoTrocarQuantidade={trocarQuantidadeDeMesesDeHistorico}
-        historico={historico}
-        estaCarregando={estaCarregandoHistorico}
-        mensagemDeErro={mensagemDeErroDoHistorico}
-        possuiRegistroDeRendaMensal={usuarioAutenticado.possuiRegistroDeRendaMensal}
-        aoEditarGasto={(gasto) => {
-          setGastoEmEdicao(gasto);
-          setModalDeGastoAberto(true);
-        }}
-        aoExcluirGasto={tratarExclusaoDeGasto}
-        aoEditarReceita={(receita) => {
-          setReceitaEmEdicao(receita);
-          setModalDeReceitaAberto(true);
-        }}
-        aoExcluirReceita={tratarExclusaoDeReceita}
-      />
+      {projecao && (
+        <PainelDeHistoricoMensal
+          aberto={painelDeHistoricoAberto}
+          aoAlternar={alternarPainelDeHistorico}
+          mesReferenciaAtual={projecao.listaDeMesesReferencia[0]}
+          mesSelecionado={mesSelecionadoNoHistorico}
+          aoTrocarMes={trocarMesDoHistorico}
+          historico={historico}
+          estaCarregando={estaCarregandoHistorico}
+          mensagemDeErro={mensagemDeErroDoHistorico}
+          possuiRegistroDeRendaMensal={usuarioAutenticado.possuiRegistroDeRendaMensal}
+          aoEditarGasto={(gasto) => {
+            setGastoEmEdicao(gasto);
+            setModalDeGastoAberto(true);
+          }}
+          aoExcluirGasto={tratarExclusaoDeGasto}
+          aoEditarReceita={(receita) => {
+            setReceitaEmEdicao(receita);
+            setModalDeReceitaAberto(true);
+          }}
+          aoExcluirReceita={tratarExclusaoDeReceita}
+        />
+      )}
 
       {modalDeGastoAberto && (
         <ModalDeFormularioDeGasto

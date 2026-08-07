@@ -1,14 +1,14 @@
 import { ChevronDown, History } from 'lucide-react';
 import { Cartao } from './Cartao';
 import { TabelaDeProjecaoMensal } from './TabelaDeProjecaoMensal';
-
-const OPCOES_DE_QUANTIDADE_DE_MESES_DE_HISTORICO = [3, 6, 12];
+import { SeletorDeMesEmCalendario } from './SeletorDeMesEmCalendario';
 
 export function PainelDeHistoricoMensal({
   aberto,
   aoAlternar,
-  quantidadeDeMesesParaTras,
-  aoTrocarQuantidade,
+  mesReferenciaAtual,
+  mesSelecionado,
+  aoTrocarMes,
   historico,
   estaCarregando,
   mensagemDeErro,
@@ -33,33 +33,21 @@ export function PainelDeHistoricoMensal({
 
       {aberto && (
         <div className="mt-5">
-          <div className="mb-5 flex w-fit items-center gap-2 rounded-lg bg-fundo-elevado p-1">
-            {OPCOES_DE_QUANTIDADE_DE_MESES_DE_HISTORICO.map((quantidade) => (
-              <button
-                key={quantidade}
-                onClick={() => aoTrocarQuantidade(quantidade)}
-                className={`rounded-md px-3 py-1.5 text-sm transition-colors ${
-                  quantidadeDeMesesParaTras === quantidade
-                    ? 'bg-acento-principal font-semibold text-fundo-principal'
-                    : 'text-texto-secundario hover:text-texto-primario'
-                }`}
-              >
-                {quantidade} meses
-              </button>
-            ))}
+          <div className="mb-5">
+            <SeletorDeMesEmCalendario
+              valor={mesSelecionado}
+              aoSelecionar={aoTrocarMes}
+              mesReferenciaLimite={mesReferenciaAtual}
+            />
           </div>
 
           {mensagemDeErro && <p className="mb-4 text-sm text-negativo">{mensagemDeErro}</p>}
 
           {estaCarregando && <p className="text-sm text-texto-secundario">Carregando histórico…</p>}
 
-          {!estaCarregando && historico && historico.listaDeMesesReferencia.length === 0 && (
-            <p className="text-sm text-texto-terciario">Nenhum dado encontrado nesse período.</p>
-          )}
-
-          {!estaCarregando && historico && historico.listaDeMesesReferencia.length > 0 && (
+          {!estaCarregando && historico && (
             <TabelaDeProjecaoMensal
-              titulo="Meses anteriores"
+              titulo="Detalhamento do mês"
               listaDeMesesReferencia={historico.listaDeMesesReferencia}
               resumoMensal={historico.resumoMensal}
               detalhamentoPorGasto={historico.detalhamentoPorGasto}

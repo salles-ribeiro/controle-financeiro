@@ -14,6 +14,34 @@ export function converterDataParaFormatoDeCampoDeInput(dataEmTextoIso) {
   return dataEmTextoIso.slice(0, 10);
 }
 
+const NOMES_DOS_MESES_EM_PORTUGUES = [
+  'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+  'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro',
+];
+
+// "mesReferencia" é sempre uma string "AAAA-MM", igual ao formato usado pelo backend.
+export function adicionarMesesAoMesReferencia(mesReferencia, quantidadeDeMesesAAdicionar) {
+  const [anoEmTexto, mesEmTexto] = mesReferencia.split('-');
+  let anoResultante = parseInt(anoEmTexto, 10);
+  let mesResultanteIndexadoEmZero = parseInt(mesEmTexto, 10) - 1 + quantidadeDeMesesAAdicionar;
+
+  while (mesResultanteIndexadoEmZero > 11) {
+    mesResultanteIndexadoEmZero -= 12;
+    anoResultante += 1;
+  }
+  while (mesResultanteIndexadoEmZero < 0) {
+    mesResultanteIndexadoEmZero += 12;
+    anoResultante -= 1;
+  }
+
+  return `${anoResultante}-${String(mesResultanteIndexadoEmZero + 1).padStart(2, '0')}`;
+}
+
+export function formatarNomeDoMesReferenciaParaExibicao(mesReferencia) {
+  const [anoEmTexto, mesEmTexto] = mesReferencia.split('-');
+  return `${NOMES_DOS_MESES_EM_PORTUGUES[parseInt(mesEmTexto, 10) - 1]} de ${anoEmTexto}`;
+}
+
 export const RESUMO_DOS_TIPOS_DE_GASTO = {
   FIXO: { rotulo: 'Fixo', descricaoCurta: 'Todo mês' },
   A_VISTA: { rotulo: 'À vista', descricaoCurta: 'Pagamento único' },

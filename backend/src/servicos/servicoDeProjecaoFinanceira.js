@@ -107,13 +107,13 @@ function gerarProjecaoFinanceiraCompleta({
   listaDeGastosAtivos,
   listaDeReceitasAtivas,
   quantidadeDeMesesAFrente,
-  quantidadeDeMesesParaTras = 0,
+  mesReferenciaEspecifico = null,
 }) {
-  const listaDeMesesReferencia = gerarListaDeMesesReferenciaAPartirDeHoje(
-    quantidadeDeMesesAFrente,
-    diaDeViradaDoCartao,
-    quantidadeDeMesesParaTras
-  );
+  // Quando um mês específico é solicitado (histórico), a lista contém
+  // somente esse mês, em vez do intervalo de meses a partir de hoje.
+  const listaDeMesesReferencia = mesReferenciaEspecifico
+    ? [mesReferenciaEspecifico]
+    : gerarListaDeMesesReferenciaAPartirDeHoje(quantidadeDeMesesAFrente, diaDeViradaDoCartao);
 
   const detalhamentoPorGasto = listaDeGastosAtivos
     .map((gasto) => {

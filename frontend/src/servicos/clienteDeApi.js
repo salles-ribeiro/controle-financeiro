@@ -131,10 +131,12 @@ function excluirReceita(id) {
 }
 
 // --- Projeção financeira ---
-function obterProjecao(quantidadeDeMesesAFrente, quantidadeDeMesesParaTras = 0) {
-  return realizarRequisicao(
-    `/projecao?quantidadeDeMesesAFrente=${quantidadeDeMesesAFrente}&quantidadeDeMesesParaTras=${quantidadeDeMesesParaTras}`
-  );
+function obterProjecao(quantidadeDeMesesAFrente) {
+  return realizarRequisicao(`/projecao?quantidadeDeMesesAFrente=${quantidadeDeMesesAFrente}`);
+}
+
+function obterProjecaoDeUmMesEspecifico(mesReferencia) {
+  return realizarRequisicao(`/projecao?mesReferencia=${mesReferencia}`);
 }
 
 export const clienteDeApi = {
@@ -157,4 +159,5 @@ export const clienteDeApi = {
   atualizarReceita,
   excluirReceita,
   obterProjecao,
+  obterProjecaoDeUmMesEspecifico,
 };
