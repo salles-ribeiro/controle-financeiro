@@ -33,7 +33,9 @@ async function realizarRequisicao(caminho, opcoes = {}) {
 
   if (!resposta.ok) {
     const mensagemDeErro = corpoDaResposta?.mensagemDeErro || 'Erro inesperado ao comunicar com o servidor.';
-    throw new Error(mensagemDeErro);
+    const erro = new Error(mensagemDeErro);
+    erro.statusHttp = resposta.status;
+    throw erro;
   }
 
   return corpoDaResposta;

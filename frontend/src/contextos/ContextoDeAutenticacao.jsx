@@ -3,6 +3,13 @@ import { clienteDeApi } from '../servicos/clienteDeApi';
 
 const ContextoDeAutenticacao = createContext(null);
 
+const QUANTIDADE_DE_TENTATIVAS_AO_CARREGAR_PERFIL = 3;
+const INTERVALO_ENTRE_TENTATIVAS_EM_MILISSEGUNDOS = 3000;
+
+function aguardar(duracaoEmMilissegundos) {
+  return new Promise((resolver) => setTimeout(resolver, duracaoEmMilissegundos));
+}
+
 export function ProvedorDeAutenticacao({ children }) {
   const [usuarioAutenticado, setUsuarioAutenticado] = useState(null);
   const [carregandoAutenticacaoInicial, setCarregandoAutenticacaoInicial] = useState(true);
@@ -13,14 +20,26 @@ export function ProvedorDeAutenticacao({ children }) {
       setCarregandoAutenticacaoInicial(false);
       return;
     }
-    try {
-      const { usuario } = await clienteDeApi.obterPerfil();
-      setUsuarioAutenticado(usuario);
-    } catch (erroAoCarregarPerfil) {
-      clienteDeApi.removerTokenDeAcessoArmazenado();
-    } finally {
-      setCarregandoAutenticacaoInicial(false);
+    for (let numeroDaTentativa = 1; numeroDaTentativa <= QUANTIDADE_DE_TENTATIVAS_AO_CARREGAR_PERFIL; numeroDaTentativa += 1) {
+      try {
+        const { usuario } = await clienteDeApi.obterPerfil();
+        setUsuarioAutenticado(usuario);
+        break;
+      } catch (erroAoCarregarPerfil) {
+        // Só remove o token quando o servidor confirma que ele é inválido/expirado.
+        // Falhas de rede ou o backend demorando a responder (ex.: "acordando" após
+        // ficar inativo) não devem forçar um novo login — tentamos de novo antes de desistir.
+        if (erroAoCarregarPerfil.statusHttp === 401) {
+          clienteDeApi.removerTokenDeAcessoArmazenado();
+          break;
+        }
+        const eraAUltimaTentativa = numeroDaTentativa === QUANTIDADE_DE_TENTATIVAS_AO_CARREGAR_PERFIL;
+        if (!eraAUltimaTentativa) {
+          await aguardar(INTERVALO_ENTRE_TENTATIVAS_EM_MILISSEGUNDOS);
+        }
+      }
     }
+    setCarregandoAutenticacaoInicial(false);
   }, []);
 
   useEffect(() => {
